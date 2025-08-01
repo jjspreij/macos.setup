@@ -2,11 +2,11 @@
 
 # macOS Software Installation Script
 # Installs Homebrew and selected applications
-# Version: 1.6.1
+# Version: 1.7.0
 
 set -e  # Exit on any error
 
-SCRIPT_VERSION="1.6.1"
+SCRIPT_VERSION="1.7.0"
 CONFIG_FILE="$HOME/.macos-setup.cfg"
 
 echo "📦 macOS Software Installation Script v$SCRIPT_VERSION"
@@ -62,7 +62,6 @@ INSTALL_ACRONIS="$INSTALL_ACRONIS"
 INSTALL_GOOGLE_DRIVE="$INSTALL_GOOGLE_DRIVE"
 INSTALL_MALWAREBYTES="$INSTALL_MALWAREBYTES"
 INSTALL_STATS="$INSTALL_STATS"
-INSTALL_SUBLIME_TEXT="$INSTALL_SUBLIME_TEXT"
 EOF
         mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
     else
@@ -79,6 +78,7 @@ INSTALL_1PASSWORD="$INSTALL_1PASSWORD"
 INSTALL_ACRONIS="$INSTALL_ACRONIS"
 INSTALL_GOOGLE_DRIVE="$INSTALL_GOOGLE_DRIVE"
 INSTALL_MALWAREBYTES="$INSTALL_MALWAREBYTES"
+INSTALL_STATS="$INSTALL_STATS"
 EOF
     fi
     print_success "Software configuration saved to $CONFIG_FILE"
@@ -145,7 +145,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -c, --use-config       Load settings from config file (still prompts for missing values)"
             echo "  -s, --skip-prompts     Use config file without any prompts (fails if no config)"
             echo "  -o, --save-config      Only save configuration, don't run installation"
-            echo "  -f, --config-file FILE Use specific config file (default: ~/.macos-setup-config)"
+            echo "  -f, --config-file FILE Use specific config file (default: ~/.macos-setup.cfg)"
             echo "  -h, --help             Show this help message"
             echo
             echo "Config file location: $CONFIG_FILE"
@@ -167,9 +167,7 @@ if [[ "$USE_CONFIG" == true ]] || [[ "$SKIP_PROMPTS" == true ]]; then
         echo "  Chrome: ${INSTALL_CHROME:-"y"}, Firefox: ${INSTALL_FIREFOX:-"y"}, Sublime Text: ${INSTALL_SUBLIME_TEXT:-"y"}"
         echo "  IINA: ${INSTALL_IINA:-"y"}, VLC: ${INSTALL_VLC:-"y"}, 1Password: ${INSTALL_1PASSWORD:-"y"}"
         echo "  Acronis Quick Assist: ${INSTALL_ACRONIS:-"y"}, Google Drive: ${INSTALL_GOOGLE_DRIVE:-"y"}"
-        echo "  Malwarebytes: ${INSTALL_MALWAREBYTES:-"y"}"
-        echo "  Stats: ${INSTALL_STATS:-"y"}"
-        echo "  Sublime Text: ${INSTALL_SUBLIME_TEXT:-"y"}"
+        echo "  Malwarebytes: ${INSTALL_MALWAREBYTES:-"y"}, Stats: ${INSTALL_STATS:-"y"}"
         echo
     else
         if [[ "$SKIP_PROMPTS" == true ]]; then

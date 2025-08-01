@@ -2,11 +2,11 @@
 
 # macOS System Customization Script
 # Configures Finder, Dock, and system preferences
-# Version: 1.4.1
+# Version: 1.7.0
 
 set -e  # Exit on any error
 
-SCRIPT_VERSION="1.4.1"
+SCRIPT_VERSION="1.7.0"
 CONFIG_FILE="$HOME/.macos-setup.cfg"
 
 echo "🎨 macOS System Customization Script v$SCRIPT_VERSION"
@@ -54,7 +54,6 @@ save_config() {
 SET_DOCK_AUTOHIDE="$SET_DOCK_AUTOHIDE"
 SET_TRACKPAD_CLICK="$SET_TRACKPAD_CLICK"
 DISABLE_STAGE_MANAGER="$DISABLE_STAGE_MANAGER"
-SHOW_HIDDEN_FILES="$SHOW_HIDDEN_FILES"
 SHOW_FILE_EXTENSIONS="$SHOW_FILE_EXTENSIONS"
 SHOW_PATH_BAR="$SHOW_PATH_BAR"
 SHOW_STATUS_BAR="$SHOW_STATUS_BAR"
@@ -70,7 +69,6 @@ EOF
 SET_DOCK_AUTOHIDE="$SET_DOCK_AUTOHIDE"
 SET_TRACKPAD_CLICK="$SET_TRACKPAD_CLICK"
 DISABLE_STAGE_MANAGER="$DISABLE_STAGE_MANAGER"
-SHOW_HIDDEN_FILES="$SHOW_HIDDEN_FILES"
 SHOW_FILE_EXTENSIONS="$SHOW_FILE_EXTENSIONS"
 SHOW_PATH_BAR="$SHOW_PATH_BAR"
 SHOW_STATUS_BAR="$SHOW_STATUS_BAR"
@@ -143,7 +141,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -c, --use-config       Load settings from config file (still prompts for missing values)"
             echo "  -s, --skip-prompts     Use config file without any prompts (fails if no config)"
             echo "  -o, --save-config      Only save configuration, don't run customization"
-            echo "  -f, --config-file FILE Use specific config file (default: ~/.macos-setup-config)"
+            echo "  -f, --config-file FILE Use specific config file (default: ~/.macos-setup.cfg)"
             echo "  -h, --help             Show this help message"
             echo
             echo "Config file location: $CONFIG_FILE"
@@ -161,11 +159,10 @@ done
 if [[ "$USE_CONFIG" == true ]] || [[ "$SKIP_PROMPTS" == true ]]; then
     if load_config; then
         echo "Loaded system customization configuration:"
-        echo "  Dock auto-hide: ${SET_DOCK_AUTOHIDE:-"n"}, Trackpad click: ${SET_TRACKPAD_CLICK:-"n"}"
-        echo "  Disable Stage Manager wallpaper click: ${DISABLE_STAGE_MANAGER:-"n"}"
-        echo "  Show hidden files: ${SHOW_HIDDEN_FILES:-"n"}, Show extensions: ${SHOW_FILE_EXTENSIONS:-"n"}"
-        echo "  Show path bar: ${SHOW_PATH_BAR:-"n"}, Show status bar: ${SHOW_STATUS_BAR:-"n"}"
-        echo "  Always show scrollbars: ${ALWAYS_SHOW_SCROLLBARS:-"n"}"
+        echo "  Dock auto-hide: ${SET_DOCK_AUTOHIDE:-"y"}, Trackpad click: ${SET_TRACKPAD_CLICK:-"y"}"
+        echo "  Disable Stage Manager wallpaper click: ${DISABLE_STAGE_MANAGER:-"y"}"
+        echo "  Show extensions: ${SHOW_FILE_EXTENSIONS:-"y"}, Show path bar: ${SHOW_PATH_BAR:-"y"}"
+        echo "  Show status bar: ${SHOW_STATUS_BAR:-"y"}, Always show scrollbars: ${ALWAYS_SHOW_SCROLLBARS:-"y"}"
         echo "  Dock - Remove: ${DOCK_REMOVE_ITEMS:-"(none)"}"
         echo "  Dock - Add: ${DOCK_ADD_ITEMS:-"(none)"}"
         echo
@@ -189,23 +186,22 @@ if [[ "$SKIP_PROMPTS" != true ]]; then
     echo
 
     # System preferences
-    echo "System preferences (y/n):"
-    prompt_with_default "Set Dock to auto-hide? [y/N]" "$SET_DOCK_AUTOHIDE" "SET_DOCK_AUTOHIDE"
-    prompt_with_default "Enable trackpad tap-to-click? [y/N]" "$SET_TRACKPAD_CLICK" "SET_TRACKPAD_CLICK"
-    prompt_with_default "Disable Stage Manager 'click wallpaper to reveal desktop'? [y/N]" "$DISABLE_STAGE_MANAGER" "DISABLE_STAGE_MANAGER"
+    echo "System preferences (Y/n) - defaults to Yes:"
+    prompt_with_default "Set Dock to auto-hide? [Y/n]" "${SET_DOCK_AUTOHIDE:-"y"}" "SET_DOCK_AUTOHIDE"
+    prompt_with_default "Enable trackpad tap-to-click? [Y/n]" "${SET_TRACKPAD_CLICK:-"y"}" "SET_TRACKPAD_CLICK"
+    prompt_with_default "Disable Stage Manager 'click wallpaper to reveal desktop'? [Y/n]" "${DISABLE_STAGE_MANAGER:-"y"}" "DISABLE_STAGE_MANAGER"
     
     echo
-    echo "Finder preferences (y/n):"
-    prompt_with_default "Show hidden files in Finder? [y/N]" "$SHOW_HIDDEN_FILES" "SHOW_HIDDEN_FILES"
-    prompt_with_default "Show file extensions in Finder? [y/N]" "$SHOW_FILE_EXTENSIONS" "SHOW_FILE_EXTENSIONS"
-    prompt_with_default "Show path bar in Finder? [y/N]" "$SHOW_PATH_BAR" "SHOW_PATH_BAR"
-    prompt_with_default "Show status bar in Finder? [y/N]" "$SHOW_STATUS_BAR" "SHOW_STATUS_BAR"
-    prompt_with_default "Always show scrollbars? [y/N]" "$ALWAYS_SHOW_SCROLLBARS" "ALWAYS_SHOW_SCROLLBARS"
+    echo "Finder preferences (Y/n) - defaults to Yes:"
+    prompt_with_default "Show file extensions in Finder? [Y/n]" "${SHOW_FILE_EXTENSIONS:-"y"}" "SHOW_FILE_EXTENSIONS"
+    prompt_with_default "Show path bar in Finder? [Y/n]" "${SHOW_PATH_BAR:-"y"}" "SHOW_PATH_BAR"
+    prompt_with_default "Show status bar in Finder? [Y/n]" "${SHOW_STATUS_BAR:-"y"}" "SHOW_STATUS_BAR"
+    prompt_with_default "Always show scrollbars? [Y/n]" "${ALWAYS_SHOW_SCROLLBARS:-"y"}" "ALWAYS_SHOW_SCROLLBARS"
 
     # Dock customization
     echo
     echo "Dock customization:"
-    echo "Enter app names separated by commas (e.g., 'Safari,Mail,Photos')"
+    echo "Enter app names separated by commas (e.g., 'Launchpad,Reminders')"
     prompt_with_default "Remove from Dock" "$DOCK_REMOVE_ITEMS" "DOCK_REMOVE_ITEMS"
     prompt_with_default "Add to Dock" "$DOCK_ADD_ITEMS" "DOCK_ADD_ITEMS"
 
@@ -231,14 +227,14 @@ print_status "STEP 1: Configuring System Preferences"
 RESTART_DOCK=false
 RESTART_FINDER=false
 
-if [[ "$SET_DOCK_AUTOHIDE" =~ ^[Yy]$ ]]; then
+if [[ -z "$SET_DOCK_AUTOHIDE" || "$SET_DOCK_AUTOHIDE" =~ ^[Yy]$ ]]; then
     print_status "Setting Dock to auto-hide..."
     defaults write com.apple.dock autohide -bool true
     RESTART_DOCK=true
     print_success "Dock auto-hide enabled"
 fi
 
-if [[ "$SET_TRACKPAD_CLICK" =~ ^[Yy]$ ]]; then
+if [[ -z "$SET_TRACKPAD_CLICK" || "$SET_TRACKPAD_CLICK" =~ ^[Yy]$ ]]; then
     print_status "Enabling trackpad tap-to-click..."
     defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
     defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
@@ -247,13 +243,13 @@ if [[ "$SET_TRACKPAD_CLICK" =~ ^[Yy]$ ]]; then
     print_success "Trackpad tap-to-click enabled"
 fi
 
-if [[ "$DISABLE_STAGE_MANAGER" =~ ^[Yy]$ ]]; then
+if [[ -z "$DISABLE_STAGE_MANAGER" || "$DISABLE_STAGE_MANAGER" =~ ^[Yy]$ ]]; then
     print_status "Disabling Stage Manager 'click wallpaper to reveal desktop'..."
     defaults write com.apple.WindowManager EnableStandardClickToShowDesktop -bool false
     print_success "Stage Manager wallpaper click disabled"
 fi
 
-if [[ "$ALWAYS_SHOW_SCROLLBARS" =~ ^[Yy]$ ]]; then
+if [[ -z "$ALWAYS_SHOW_SCROLLBARS" || "$ALWAYS_SHOW_SCROLLBARS" =~ ^[Yy]$ ]]; then
     print_status "Setting scrollbars to always show..."
     defaults write NSGlobalDomain AppleShowScrollBars -string "Always"
     print_success "Scrollbars will always be visible"
@@ -262,34 +258,21 @@ fi
 print_divider
 print_status "STEP 2: Configuring Finder Preferences"
 
-if [[ "$SHOW_HIDDEN_FILES" =~ ^[Yy]$ ]]; then
-    print_status "Showing hidden files in Finder..."
-    defaults write com.apple.finder AppleShowAllFiles -bool true
-    RESTART_FINDER=true
-    print_success "Hidden files will be shown in Finder"
-fi
-
-if [[ "$SHOW_FILE_EXTENSIONS" =~ ^[Yy]$ ]]; then
+if [[ -z "$SHOW_FILE_EXTENSIONS" || "$SHOW_FILE_EXTENSIONS" =~ ^[Yy]$ ]]; then
     print_status "Showing file extensions in Finder..."
     defaults write NSGlobalDomain AppleShowAllExtensions -bool true
     RESTART_FINDER=true
     print_success "File extensions will be shown in Finder"
 fi
 
-if [[ "$SHOW_PATH_BAR" =~ ^[Yy]$ ]]; then
+if [[ -z "$SHOW_PATH_BAR" || "$SHOW_PATH_BAR" =~ ^[Yy]$ ]]; then
     print_status "Showing path bar in Finder..."
     defaults write com.apple.finder ShowPathbar -bool true
     RESTART_FINDER=true
     print_success "Path bar will be shown in Finder"
 fi
 
-if [[ "$SHOW_STATUS_BAR" =~ ^[Yy]$ ]] && echo "  ✓ Status bar shown in Finder"
-[[ "$ALWAYS_SHOW_SCROLLBARS" =~ ^[Yy]$ ]] && echo "  ✓ Scrollbars always visible"
-[[ -n "$DOCK_REMOVE_ITEMS" ]] && echo "  ✓ Removed from Dock: $DOCK_REMOVE_ITEMS"
-[[ -n "$DOCK_ADD_ITEMS" ]] && echo "  ✓ Added to Dock: $DOCK_ADD_ITEMS"
-echo
-[[ -f "$CONFIG_FILE" ]] && echo "Configuration saved to: $CONFIG_FILE"
-echo "You may need to log out and back in for some changes to take full effect."; then
+if [[ -z "$SHOW_STATUS_BAR" || "$SHOW_STATUS_BAR" =~ ^[Yy]$ ]]; then
     print_status "Showing status bar in Finder..."
     defaults write com.apple.finder ShowStatusBar -bool true
     RESTART_FINDER=true
@@ -376,10 +359,15 @@ print_divider
 print_success "System customization complete! 🎉"
 echo
 echo "Summary of customizations applied:"
-[[ "$SET_DOCK_AUTOHIDE" =~ ^[Yy]$ ]] && echo "  ✓ Dock set to auto-hide"
-[[ "$SET_TRACKPAD_CLICK" =~ ^[Yy]$ ]] && echo "  ✓ Trackpad tap-to-click enabled"
-[[ "$DISABLE_STAGE_MANAGER" =~ ^[Yy]$ ]] && echo "  ✓ Stage Manager wallpaper click disabled"
-[[ "$SHOW_HIDDEN_FILES" =~ ^[Yy]$ ]] && echo "  ✓ Hidden files shown in Finder"
-[[ "$SHOW_FILE_EXTENSIONS" =~ ^[Yy]$ ]] && echo "  ✓ File extensions shown in Finder"
-[[ "$SHOW_PATH_BAR" =~ ^[Yy]$ ]] && echo "  ✓ Path bar shown in Finder"
-[[ "$SHOW_STATUS_BAR" =~ ^[Yy]$ ]]
+[[ -z "$SET_DOCK_AUTOHIDE" || "$SET_DOCK_AUTOHIDE" =~ ^[Yy]$ ]] && echo "  ✓ Dock set to auto-hide"
+[[ -z "$SET_TRACKPAD_CLICK" || "$SET_TRACKPAD_CLICK" =~ ^[Yy]$ ]] && echo "  ✓ Trackpad tap-to-click enabled"
+[[ -z "$DISABLE_STAGE_MANAGER" || "$DISABLE_STAGE_MANAGER" =~ ^[Yy]$ ]] && echo "  ✓ Stage Manager wallpaper click disabled"
+[[ -z "$SHOW_FILE_EXTENSIONS" || "$SHOW_FILE_EXTENSIONS" =~ ^[Yy]$ ]] && echo "  ✓ File extensions shown in Finder"
+[[ -z "$SHOW_PATH_BAR" || "$SHOW_PATH_BAR" =~ ^[Yy]$ ]] && echo "  ✓ Path bar shown in Finder"
+[[ -z "$SHOW_STATUS_BAR" || "$SHOW_STATUS_BAR" =~ ^[Yy]$ ]] && echo "  ✓ Status bar shown in Finder"
+[[ -z "$ALWAYS_SHOW_SCROLLBARS" || "$ALWAYS_SHOW_SCROLLBARS" =~ ^[Yy]$ ]] && echo "  ✓ Scrollbars always visible"
+[[ -n "$DOCK_REMOVE_ITEMS" ]] && echo "  ✓ Removed from Dock: $DOCK_REMOVE_ITEMS"
+[[ -n "$DOCK_ADD_ITEMS" ]] && echo "  ✓ Added to Dock: $DOCK_ADD_ITEMS"
+echo
+[[ -f "$CONFIG_FILE" ]] && echo "Configuration saved to: $CONFIG_FILE"
+echo "You may need to log out and back in for some changes to take full effect."

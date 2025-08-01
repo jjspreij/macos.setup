@@ -4,10 +4,10 @@ Two complementary scripts for streamlined macOS setup and customization.
 
 ## Scripts Overview
 
-### `install-software.sh` (v1.5.0)
+### `install-software.sh`
 Installs Homebrew and applications with macOS update checking.
 
-### `customize-system.sh` (v1.4.0)  
+### `customize-system.sh`
 Configures Finder, Dock, and system preferences.
 
 ## Quick Start
@@ -39,7 +39,6 @@ Both scripts support the same arguments:
 ### Homebrew Applications
 - **Chrome** - Web browser
 - **Firefox** - Web browser  
-- **TextMate** - Text editor
 - **Sublime Text** - Premium text editor
 - **IINA** - Media player
 - **VLC** - Media player
@@ -58,7 +57,6 @@ Both scripts support the same arguments:
 ## System Customizations
 
 ### Finder Settings
-- Show hidden files
 - Show file extensions
 - Show path bar
 - Show status bar
@@ -70,28 +68,31 @@ Both scripts support the same arguments:
 - Always show scrollbars
 
 ### Dock Management
-- Remove unwanted apps (comma-separated: `Safari,Mail,Photos`)
-- Add apps (comma-separated: `Chrome,TextMate,Terminal`)
+- Remove unwanted apps (comma-separated: `Launchpad,Reminders`)
+- Add apps (comma-separated: `Google Chrome,Sublime Text`)
 - Auto-installs `dockutil` if needed
 
 ## Configuration File
 
-Both scripts use `~/.macos-setup-config` for settings:
+Both scripts use `~/.macos-setup.cfg` for settings:
 
 ```bash
 # Software Installation Settings
 COMPUTER_NAME="My MacBook Pro"
 INSTALL_CHROME="y"
 INSTALL_FIREFOX="y"
+INSTALL_SUBLIME_TEXT="y"
 # ... other software settings
 
 # System Customization Settings  
 SET_DOCK_AUTOHIDE="y"
-SHOW_HIDDEN_FILES="y"
-DOCK_REMOVE_ITEMS="Safari,Mail,Photos"
-DOCK_ADD_ITEMS="Chrome,Terminal"
+SHOW_FILE_EXTENSIONS="y"
+DOCK_REMOVE_ITEMS="Safari,Mail,Photos,Launchpad"
+DOCK_ADD_ITEMS="Google Chrome,Sublime Text"
 # ... other system settings
 ```
+
+A template configuration file (`macos-setup.cfg.template`) is provided with recommended defaults.
 
 ## Usage Examples
 
@@ -112,7 +113,11 @@ DOCK_ADD_ITEMS="Chrome,Terminal"
 ./customize-system.sh -o
 
 # Use custom config file
-./install-software.sh -f ~/my-setup.conf -s
+./install-software.sh -f ~/my-setup.cfg -s
+
+# Use provided template
+cp macos-setup.cfg.template ~/.macos-setup.cfg
+./install-software.sh -s && ./customize-system.sh -s
 ```
 
 ## Features
@@ -138,8 +143,9 @@ DOCK_ADD_ITEMS="Chrome,Terminal"
 
 ## Notes
 
-- Scripts default all software to "Yes" (press Enter to install)
-- Press "n" to skip any software installation
+- Scripts default all software and settings to "Yes" (press Enter to install/enable)
+- Press "n" to skip any software installation or system setting
 - Config file is shared between both scripts
 - Homebrew permissions are automatically fixed for multi-user setups
 - Stage Manager setting only disables wallpaper click, not Stage Manager itself
+- Template config file provided with recommended defaults
