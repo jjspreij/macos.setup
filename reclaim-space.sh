@@ -2,7 +2,7 @@
 
 # macOS Reclaim Space Script
 # Removes bloatware and cleans up caches to free disk space
-# Version: 2.1.0
+# Version: 2.1.1
 
 SCRIPT_VERSION="2.1.0"
 DIVIDER_ICON="🧹"
@@ -67,6 +67,7 @@ if [[ "$DO_REMOVE_BLOAT" == "y" ]]; then
     remove_and_tally "/Applications/GarageBand.app" "GarageBand.app"
     remove_and_tally "/Library/Application Support/GarageBand" "GarageBand support files"
     remove_and_tally "/Library/Application Support/Logic" "Logic support files"
+    remove_and_tally "/Library/Audio" "Apple audio content (GarageBand/Logic loops)"
 
     if [[ "$SPACE_FREED" -gt 0 ]]; then
         if [[ "$SPACE_FREED" -ge 1024 ]]; then
