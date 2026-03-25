@@ -2,11 +2,17 @@
 
 # De Appel - Mac Setup & Cleanup Script
 # Client-specific setup tasks for De Appel computers
-# Version: 1.1.0
+# Version: 1.3.0
 
 set -e  # Exit on any error
 
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.3.0"
+
+# Root check — needed for removing apps and clearing system caches
+if [[ "$EUID" -ne 0 ]]; then
+    echo "This script must be run as root: sudo $0"
+    exit 1
+fi
 
 echo "🍎 De Appel Mac Setup & Cleanup Script v$SCRIPT_VERSION"
 echo "================================================"
@@ -74,8 +80,7 @@ echo
 
 prompt_yn "Install OmniDiskSweeper?" "y" "DO_OMNIDISKSWEEPER"
 prompt_yn "Remove iMovie, GarageBand & support files?" "y" "DO_REMOVE_BLOAT"
-
-# (future tasks will be added here)
+prompt_yn "Clean up system caches, backups & unused files?" "y" "DO_CLEANUP"
 
 print_divider
 
@@ -160,7 +165,7 @@ if [[ "$DO_REMOVE_BLOAT" == "y" ]]; then
     if [[ -d "/Applications/iMovie.app" ]]; then
         SIZE=$(du -sm "/Applications/iMovie.app" 2>/dev/null | awk '{print $1}')
         print_status "Removing iMovie.app (${SIZE:-?} MB)..."
-        sudo rm -rf "/Applications/iMovie.app"
+        rm -rf "/Applications/iMovie.app"
         SPACE_FREED=$((SPACE_FREED + ${SIZE:-0}))
         print_success "iMovie removed"
     else
@@ -171,7 +176,7 @@ if [[ "$DO_REMOVE_BLOAT" == "y" ]]; then
     if [[ -d "/Applications/GarageBand.app" ]]; then
         SIZE=$(du -sm "/Applications/GarageBand.app" 2>/dev/null | awk '{print $1}')
         print_status "Removing GarageBand.app (${SIZE:-?} MB)..."
-        sudo rm -rf "/Applications/GarageBand.app"
+        rm -rf "/Applications/GarageBand.app"
         SPACE_FREED=$((SPACE_FREED + ${SIZE:-0}))
         print_success "GarageBand removed"
     else
@@ -182,7 +187,7 @@ if [[ "$DO_REMOVE_BLOAT" == "y" ]]; then
     if [[ -d "/Library/Application Support/GarageBand" ]]; then
         SIZE=$(du -sm "/Library/Application Support/GarageBand" 2>/dev/null | awk '{print $1}')
         print_status "Removing GarageBand support files (${SIZE:-?} MB)..."
-        sudo rm -rf "/Library/Application Support/GarageBand"
+        rm -rf "/Library/Application Support/GarageBand"
         SPACE_FREED=$((SPACE_FREED + ${SIZE:-0}))
         print_success "GarageBand support files removed"
     else
@@ -193,7 +198,7 @@ if [[ "$DO_REMOVE_BLOAT" == "y" ]]; then
     if [[ -d "/Library/Application Support/Logic" ]]; then
         SIZE=$(du -sm "/Library/Application Support/Logic" 2>/dev/null | awk '{print $1}')
         print_status "Removing Logic support files (${SIZE:-?} MB)..."
-        sudo rm -rf "/Library/Application Support/Logic"
+        rm -rf "/Library/Application Support/Logic"
         SPACE_FREED=$((SPACE_FREED + ${SIZE:-0}))
         print_success "Logic support files removed"
     else
@@ -212,6 +217,137 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+# STEP 3: System cleanup
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "$DO_CLEANUP" == "y" ]]; then
+    print_divider
+    print_status "STEP 3: System cleanup"
+
+    CLEANUP_FREED=0
+
+    # Helper: remove a path and tally space freed
+    remove_and_tally() {
+        local target="$1"
+        local label="$2"
+
+        if [[ -e "$target" ]]; then
+            SIZE=$(du -sm "$target" 2>/dev/null | awk '{print $1}')
+            if [[ "${SIZE:-0}" -gt 0 ]]; then
+                print_status "Removing $label (${SIZE} MB)..."
+                rm -rf "$target"
+                CLEANUP_FREED=$((CLEANUP_FREED + SIZE))
+                print_success "$label removed"
+            else
+                print_status "$label exists but is empty — skipping"
+            fi
+        else
+            print_status "$label not found — skipping"
+        fi
+    }
+
+    # --- iOS/iPadOS device backups ---
+    print_status "Checking for iOS/iPadOS device backups..."
+    for BACKUP_DIR in /Users/*/Library/Application\ Support/MobileSync/Backup; do
+        if [[ -d "$BACKUP_DIR" ]]; then
+            USER_DIR=$(echo "$BACKUP_DIR" | cut -d'/' -f3)
+            remove_and_tally "$BACKUP_DIR" "iOS backups for $USER_DIR"
+        fi
+    done
+
+    # --- System caches ---
+    remove_and_tally "/Library/Caches" "System caches (/Library/Caches)"
+    # Recreate the directory so the system doesn't complain
+    [[ ! -d "/Library/Caches" ]] && mkdir -p /Library/Caches
+
+    # --- Per-user caches ---
+    print_status "Checking per-user caches..."
+    for USER_CACHE in /Users/*/Library/Caches; do
+        if [[ -d "$USER_CACHE" ]]; then
+            USER_DIR=$(echo "$USER_CACHE" | cut -d'/' -f3)
+            SIZE=$(du -sm "$USER_CACHE" 2>/dev/null | awk '{print $1}')
+            if [[ "${SIZE:-0}" -gt 0 ]]; then
+                print_status "Clearing caches for $USER_DIR (${SIZE} MB)..."
+                rm -rf "$USER_CACHE"/*
+                CLEANUP_FREED=$((CLEANUP_FREED + SIZE))
+                print_success "Caches cleared for $USER_DIR"
+            fi
+        fi
+    done
+
+    # --- Old software update downloads ---
+    remove_and_tally "/Library/Updates" "Old software update downloads"
+
+    # --- Unused printer drivers ---
+    if [[ -d "/Library/Printers" ]]; then
+        SIZE=$(du -sm "/Library/Printers" 2>/dev/null | awk '{print $1}')
+        if [[ "${SIZE:-0}" -gt 100 ]]; then
+            print_status "Printer drivers found (${SIZE} MB)"
+            echo "  This removes ALL printer drivers — printers will re-download"
+            echo "  their drivers automatically when next used."
+            prompt_yn "  Remove printer drivers?" "y" "DO_REMOVE_PRINTERS"
+            if [[ "$DO_REMOVE_PRINTERS" == "y" ]]; then
+                rm -rf /Library/Printers/*
+                CLEANUP_FREED=$((CLEANUP_FREED + SIZE))
+                print_success "Printer drivers removed"
+            else
+                print_status "Printer drivers kept"
+            fi
+        else
+            print_status "Printer drivers only ${SIZE:-0} MB — not worth removing"
+        fi
+    fi
+
+    # --- Mail downloads per user ---
+    print_status "Checking Mail downloads..."
+    for MAIL_DL in /Users/*/Library/Containers/com.apple.mail/Data/Library/Mail\ Downloads; do
+        if [[ -d "$MAIL_DL" ]]; then
+            USER_DIR=$(echo "$MAIL_DL" | cut -d'/' -f3)
+            SIZE=$(du -sm "$MAIL_DL" 2>/dev/null | awk '{print $1}')
+            if [[ "${SIZE:-0}" -gt 0 ]]; then
+                print_status "Clearing Mail downloads for $USER_DIR (${SIZE} MB)..."
+                rm -rf "$MAIL_DL"/*
+                CLEANUP_FREED=$((CLEANUP_FREED + SIZE))
+                print_success "Mail downloads cleared for $USER_DIR"
+            fi
+        fi
+    done
+
+    # --- Time Machine local snapshots ---
+    SNAPSHOT_COUNT=$(tmutil listlocalsnapshots / 2>/dev/null | grep -c "com.apple" || true)
+    if [[ "$SNAPSHOT_COUNT" -gt 0 ]]; then
+        print_status "Found $SNAPSHOT_COUNT local Time Machine snapshot(s)"
+        prompt_yn "  Delete all local snapshots?" "y" "DO_DELETE_SNAPSHOTS"
+        if [[ "$DO_DELETE_SNAPSHOTS" == "y" ]]; then
+            print_status "Deleting local Time Machine snapshots..."
+            tmutil listlocalsnapshots / 2>/dev/null | grep "com.apple" | while read -r SNAP; do
+                SNAP_DATE=$(echo "$SNAP" | sed 's/com.apple.TimeMachine.//')
+                tmutil deletelocalsnapshots "$SNAP_DATE" 2>/dev/null || true
+            done
+            print_success "Local Time Machine snapshots deleted"
+        else
+            print_status "Time Machine snapshots kept"
+        fi
+    else
+        print_status "No local Time Machine snapshots found"
+    fi
+
+    # --- Cleanup total ---
+    echo
+    if [[ "$CLEANUP_FREED" -gt 0 ]]; then
+        if [[ "$CLEANUP_FREED" -ge 1024 ]]; then
+            print_success "Cleanup freed approximately $((CLEANUP_FREED / 1024)) GB"
+        else
+            print_success "Cleanup freed approximately ${CLEANUP_FREED} MB"
+        fi
+    else
+        print_status "No significant space to clean up"
+    fi
+else
+    print_status "System cleanup skipped"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Done
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -223,4 +359,6 @@ echo "Summary:"
 [[ "$DO_OMNIDISKSWEEPER" == "n" ]] && echo "  – OmniDiskSweeper (skipped)"
 [[ "$DO_REMOVE_BLOAT" == "y" ]] && echo "  ✓ Removed iMovie, GarageBand & support files"
 [[ "$DO_REMOVE_BLOAT" == "n" ]] && echo "  – Bloatware removal (skipped)"
+[[ "$DO_CLEANUP" == "y" ]] && echo "  ✓ System cleanup"
+[[ "$DO_CLEANUP" == "n" ]] && echo "  – System cleanup (skipped)"
 echo
