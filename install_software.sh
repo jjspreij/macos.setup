@@ -36,6 +36,7 @@ INSTALL_GOOGLE_DRIVE="$INSTALL_GOOGLE_DRIVE"
 INSTALL_MALWAREBYTES="$INSTALL_MALWAREBYTES"
 INSTALL_STATS="$INSTALL_STATS"
 INSTALL_OMNIDISKSWEEPER="$INSTALL_OMNIDISKSWEEPER"
+INSTALL_ZEROTIER="$INSTALL_ZEROTIER"
 EOF
         mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
     else
@@ -54,6 +55,7 @@ INSTALL_GOOGLE_DRIVE="$INSTALL_GOOGLE_DRIVE"
 INSTALL_MALWAREBYTES="$INSTALL_MALWAREBYTES"
 INSTALL_STATS="$INSTALL_STATS"
 INSTALL_OMNIDISKSWEEPER="$INSTALL_OMNIDISKSWEEPER"
+INSTALL_ZEROTIER="$INSTALL_ZEROTIER"
 EOF
     fi
     print_success "Software configuration saved to $CONFIG_FILE"
@@ -130,6 +132,7 @@ if [[ "$USE_CONFIG" == true ]] || [[ "$SKIP_PROMPTS" == true ]]; then
         echo "  Acronis Quick Assist: ${INSTALL_ACRONIS:-"y"}, Google Drive: ${INSTALL_GOOGLE_DRIVE:-"y"}"
         echo "  Malwarebytes: ${INSTALL_MALWAREBYTES:-"y"}, Stats: ${INSTALL_STATS:-"y"}"
         echo "  OmniDiskSweeper: ${INSTALL_OMNIDISKSWEEPER:-"y"}"
+        echo "  ZeroTier: ${INSTALL_ZEROTIER:-"y"}"
         echo
     else
         if [[ "$SKIP_PROMPTS" == true ]]; then
@@ -167,7 +170,7 @@ if [[ "$SKIP_PROMPTS" != true ]]; then
     prompt_with_default "Stats (system monitor)? [Y/n]" "${INSTALL_STATS:-"y"}" "INSTALL_STATS"
     prompt_with_default "Acronis Cyber Protect Connect Quick Assist? [Y/n]" "${INSTALL_ACRONIS:-"y"}" "INSTALL_ACRONIS"
     prompt_with_default "OmniDiskSweeper? [Y/n]" "${INSTALL_OMNIDISKSWEEPER:-"y"}" "INSTALL_OMNIDISKSWEEPER"
-
+    prompt_with_default "ZeroTier One? [Y/n]" "${INSTALL_ZEROTIER:-"y"}" "INSTALL_ZEROTIER"
     # Save configuration
     echo
     read -p "Save this configuration for future use? [Y/n]: " SAVE_CONFIG_CHOICE
@@ -295,6 +298,11 @@ fi
 if [[ -z "$INSTALL_STATS" || "$INSTALL_STATS" =~ ^[Yy]$ ]]; then
     INSTALL_STATS="y"
     SOFTWARE_TO_INSTALL+=("stats")
+fi
+
+if [[ -z "$INSTALL_ZEROTIER" || "$INSTALL_ZEROTIER" =~ ^[Yy]$ ]]; then
+    INSTALL_ZEROTIER="y"
+    SOFTWARE_TO_INSTALL+=("zerotier-one")
 fi
 
 if [ ${#SOFTWARE_TO_INSTALL[@]} -gt 0 ]; then
@@ -483,6 +491,7 @@ echo "Summary of installed software:"
 [[ ${#SOFTWARE_TO_INSTALL[@]} -gt 0 ]] && echo "  ✓ Installed via Homebrew: $(IFS=', '; echo "${SOFTWARE_TO_INSTALL[*]}")"
 [[ -z "$INSTALL_ACRONIS" || "$INSTALL_ACRONIS" =~ ^[Yy]$ ]] && echo "  ✓ Acronis Cyber Protect Connect Quick Assist"
 [[ -z "$INSTALL_OMNIDISKSWEEPER" || "$INSTALL_OMNIDISKSWEEPER" =~ ^[Yy]$ ]] && echo "  ✓ OmniDiskSweeper"
+[[ -z "$INSTALL_ZEROTIER" || "$INSTALL_ZEROTIER" =~ ^[Yy]$ ]] && echo "  ✓ ZeroTier One"
 echo
 [[ -f "$CONFIG_FILE" ]] && echo "Configuration saved to: $CONFIG_FILE"
 echo "Run 'customize_system.sh' next to configure Finder, Dock, and system preferences!"
