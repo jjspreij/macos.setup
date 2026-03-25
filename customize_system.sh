@@ -2,46 +2,19 @@
 
 # macOS System Customization Script
 # Configures Finder, Dock, and system preferences
-# Version: 1.7.0
+# Version: 1.8.0
 
-set -e  # Exit on any error
-
-SCRIPT_VERSION="1.7.0"
+SCRIPT_VERSION="1.8.0"
 CONFIG_FILE="$HOME/.macos-setup.cfg"
+DIVIDER_ICON="🎨"
+
+# Source shared functions
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 echo "🎨 macOS System Customization Script v$SCRIPT_VERSION"
 echo "===================================="
 echo
-
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Function to print colored output
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_divider() {
-    echo
-    echo -e "${BLUE}🎨════════════════════════════════════════════════════════════════════════════════🎨${NC}"
-    echo
-}
 
 # Function to save config
 save_config() {
@@ -88,25 +61,6 @@ load_config() {
         return 0
     else
         return 1
-    fi
-}
-
-# Function to prompt for input with default
-prompt_with_default() {
-    local prompt="$1"
-    local default="$2"
-    local var_name="$3"
-    
-    if [[ -n "$default" ]]; then
-        read -p "$prompt [$default]: " input
-        if [[ -z "$input" ]]; then
-            eval "$var_name='$default'"
-        else
-            eval "$var_name='$input'"
-        fi
-    else
-        read -p "$prompt: " input
-        eval "$var_name='$input'"
     fi
 }
 

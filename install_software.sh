@@ -2,46 +2,19 @@
 
 # macOS Software Installation Script
 # Installs Homebrew and selected applications
-# Version: 1.7.0
+# Version: 1.8.0
 
-set -e  # Exit on any error
-
-SCRIPT_VERSION="1.7.0"
+SCRIPT_VERSION="1.8.0"
 CONFIG_FILE="$HOME/.macos-setup.cfg"
+DIVIDER_ICON="🔷"
+
+# Source shared functions
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 echo "📦 macOS Software Installation Script v$SCRIPT_VERSION"
 echo "====================================="
 echo
-
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Function to print colored output
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_divider() {
-    echo
-    echo -e "${BLUE}🔷════════════════════════════════════════════════════════════════════════════════🔷${NC}"
-    echo
-}
 
 # Function to save config
 save_config() {
@@ -62,6 +35,7 @@ INSTALL_ACRONIS="$INSTALL_ACRONIS"
 INSTALL_GOOGLE_DRIVE="$INSTALL_GOOGLE_DRIVE"
 INSTALL_MALWAREBYTES="$INSTALL_MALWAREBYTES"
 INSTALL_STATS="$INSTALL_STATS"
+INSTALL_OMNIDISKSWEEPER="$INSTALL_OMNIDISKSWEEPER"
 EOF
         mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
     else
@@ -79,6 +53,7 @@ INSTALL_ACRONIS="$INSTALL_ACRONIS"
 INSTALL_GOOGLE_DRIVE="$INSTALL_GOOGLE_DRIVE"
 INSTALL_MALWAREBYTES="$INSTALL_MALWAREBYTES"
 INSTALL_STATS="$INSTALL_STATS"
+INSTALL_OMNIDISKSWEEPER="$INSTALL_OMNIDISKSWEEPER"
 EOF
     fi
     print_success "Software configuration saved to $CONFIG_FILE"
@@ -92,25 +67,6 @@ load_config() {
         return 0
     else
         return 1
-    fi
-}
-
-# Function to prompt for input with default
-prompt_with_default() {
-    local prompt="$1"
-    local default="$2"
-    local var_name="$3"
-    
-    if [[ -n "$default" ]]; then
-        read -p "$prompt [$default]: " input
-        if [[ -z "$input" ]]; then
-            eval "$var_name='$default'"
-        else
-            eval "$var_name='$input'"
-        fi
-    else
-        read -p "$prompt: " input
-        eval "$var_name='$input'"
     fi
 }
 
@@ -168,6 +124,7 @@ if [[ "$USE_CONFIG" == true ]] || [[ "$SKIP_PROMPTS" == true ]]; then
         echo "  IINA: ${INSTALL_IINA:-"y"}, VLC: ${INSTALL_VLC:-"y"}, 1Password: ${INSTALL_1PASSWORD:-"y"}"
         echo "  Acronis Quick Assist: ${INSTALL_ACRONIS:-"y"}, Google Drive: ${INSTALL_GOOGLE_DRIVE:-"y"}"
         echo "  Malwarebytes: ${INSTALL_MALWAREBYTES:-"y"}, Stats: ${INSTALL_STATS:-"y"}"
+        echo "  OmniDiskSweeper: ${INSTALL_OMNIDISKSWEEPER:-"y"}"
         echo
     else
         if [[ "$SKIP_PROMPTS" == true ]]; then
@@ -204,6 +161,7 @@ if [[ "$SKIP_PROMPTS" != true ]]; then
     prompt_with_default "Malwarebytes? [Y/n]" "${INSTALL_MALWAREBYTES:-"y"}" "INSTALL_MALWAREBYTES"
     prompt_with_default "Stats (system monitor)? [Y/n]" "${INSTALL_STATS:-"y"}" "INSTALL_STATS"
     prompt_with_default "Acronis Cyber Protect Connect Quick Assist? [Y/n]" "${INSTALL_ACRONIS:-"y"}" "INSTALL_ACRONIS"
+    prompt_with_default "OmniDiskSweeper? [Y/n]" "${INSTALL_OMNIDISKSWEEPER:-"y"}" "INSTALL_OMNIDISKSWEEPER"
 
     # Save configuration
     echo
@@ -353,60 +311,125 @@ print_status "STEP 4: Installing Special Applications"
 
 # Handle Acronis separately since it's not in Homebrew
 if [[ -z "$INSTALL_ACRONIS" || "$INSTALL_ACRONIS" =~ ^[Yy]$ ]]; then
-    print_status "Downloading and installing Acronis Cyber Protect Connect Quick Assist..."
-    
-    # Create temp directory
-    TEMP_DIR=$(mktemp -d)
-    cd "$TEMP_DIR"
-    
-    # Download the installer (filename will be determined by server)
-    print_status "Downloading Acronis installer..."
-    if curl -L -J -O "https://go.acronis.com/AcronisCyberProtectConnect_QAforMac"; then
-        # Find the downloaded file (won't have .zip extension)
-        DOWNLOADED_FILE=$(ls -t | head -1)
-        
-        if [[ -n "$DOWNLOADED_FILE" && -f "$DOWNLOADED_FILE" ]]; then
-            # Rename to .zip for extraction
-            ZIP_FILE="${DOWNLOADED_FILE}.zip"
-            print_status "Renaming $DOWNLOADED_FILE to $ZIP_FILE"
-            mv "$DOWNLOADED_FILE" "$ZIP_FILE"
-            
-            # Extract the zip
-            print_status "Extracting $ZIP_FILE..."
-            if unzip -q "$ZIP_FILE"; then
-                # Look for the Acronis app (it has spaces in the name)
-                if [[ -d "Acronis Cyber Protect Connect Quick Assist.app" ]]; then
-                    print_status "Installing Acronis app to Applications..."
-                    
-                    # Remove existing installation if present
-                    if [[ -d "/Applications/Acronis Cyber Protect Connect Quick Assist.app" ]]; then
-                        print_status "Removing existing installation..."
-                        rm -rf "/Applications/Acronis Cyber Protect Connect Quick Assist.app"
+    if [[ -d "/Applications/Acronis Cyber Protect Connect Quick Assist.app" ]]; then
+        print_success "Acronis already installed — skipping"
+    else
+        print_status "Downloading and installing Acronis Cyber Protect Connect Quick Assist..."
+
+        # Create temp directory
+        TEMP_DIR=$(mktemp -d)
+        cd "$TEMP_DIR"
+
+        # Download the installer (filename will be determined by server)
+        print_status "Downloading Acronis installer..."
+        if curl -L -J -O "https://go.acronis.com/AcronisCyberProtectConnect_QAforMac"; then
+            # Find the downloaded file (won't have .zip extension)
+            DOWNLOADED_FILE=$(ls -t | head -1)
+
+            if [[ -n "$DOWNLOADED_FILE" && -f "$DOWNLOADED_FILE" ]]; then
+                # Rename to .zip for extraction
+                ZIP_FILE="${DOWNLOADED_FILE}.zip"
+                print_status "Renaming $DOWNLOADED_FILE to $ZIP_FILE"
+                mv "$DOWNLOADED_FILE" "$ZIP_FILE"
+
+                # Extract the zip
+                print_status "Extracting $ZIP_FILE..."
+                if unzip -q "$ZIP_FILE"; then
+                    # Look for the Acronis app (it has spaces in the name)
+                    if [[ -d "Acronis Cyber Protect Connect Quick Assist.app" ]]; then
+                        print_status "Installing Acronis app to Applications..."
+
+                        # Remove existing installation if present
+                        if [[ -d "/Applications/Acronis Cyber Protect Connect Quick Assist.app" ]]; then
+                            print_status "Removing existing installation..."
+                            rm -rf "/Applications/Acronis Cyber Protect Connect Quick Assist.app"
+                        fi
+
+                        # Move the app to Applications
+                        mv "Acronis Cyber Protect Connect Quick Assist.app" /Applications/
+                        print_success "Acronis app installed to Applications"
+                    else
+                        print_warning "Could not find 'Acronis Cyber Protect Connect Quick Assist.app'"
+                        print_status "Contents found:"
+                        ls -la
                     fi
-                    
-                    # Move the app to Applications
-                    mv "Acronis Cyber Protect Connect Quick Assist.app" /Applications/
-                    print_success "Acronis app installed to Applications"
                 else
-                    print_warning "Could not find 'Acronis Cyber Protect Connect Quick Assist.app'"
-                    print_status "Contents found:"
-                    ls -la
+                    print_error "Failed to extract $ZIP_FILE"
                 fi
             else
-                print_error "Failed to extract $ZIP_FILE"
+                print_error "No file found after download"
             fi
         else
-            print_error "No file found after download"
+            print_error "Failed to download Acronis installer"
         fi
-    else
-        print_error "Failed to download Acronis installer"
+
+        # Return to original directory
+        cd - >/dev/null
+        rm -rf "$TEMP_DIR"
     fi
-    
-    # Return to original directory
-    cd - >/dev/null
-    rm -rf "$TEMP_DIR"
 else
     print_status "Acronis installation skipped"
+fi
+
+# Handle OmniDiskSweeper separately — DMG with license agreement
+if [[ -z "$INSTALL_OMNIDISKSWEEPER" || "$INSTALL_OMNIDISKSWEEPER" =~ ^[Yy]$ ]]; then
+    if [[ -d "/Applications/OmniDiskSweeper.app" ]]; then
+        print_success "OmniDiskSweeper already installed — skipping"
+    else
+        print_status "Downloading and installing OmniDiskSweeper..."
+
+        TEMP_DIR=$(mktemp -d)
+        DMG_FILE="$TEMP_DIR/OmniDiskSweeper.dmg"
+        DOWNLOAD_URL="https://www.omnigroup.com/download/latest/OmniDiskSweeper"
+
+        print_status "Downloading OmniDiskSweeper..."
+        if curl -L -o "$DMG_FILE" "$DOWNLOAD_URL"; then
+            print_status "Downloaded to: $DMG_FILE"
+            print_status "Mounting disk image (accepting license agreement)..."
+            MOUNT_OUTPUT=$(printf 'Y\n' | PAGER=cat hdiutil attach "$DMG_FILE" -nobrowse 2>&1)
+            MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep "/Volumes" | awk -F'\t' '{print $NF}')
+
+            if [[ -n "$MOUNT_POINT" ]]; then
+                APP_PATH=$(find "$MOUNT_POINT" -maxdepth 1 -name "OmniDiskSweeper.app" -print -quit)
+
+                if [[ -n "$APP_PATH" ]]; then
+                    print_status "Copying OmniDiskSweeper to /Applications..."
+                    cp -R "$APP_PATH" /Applications/
+                    print_success "OmniDiskSweeper installed"
+                    print_status "OmniDiskSweeper needs Full Disk Access to fully scan."
+                    print_status "Terminal also needs Full Disk Access to launch it with sudo."
+                    print_status "Opening Privacy & Security settings..."
+                    open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+                    echo
+                    echo "  Add BOTH of these to Full Disk Access:"
+                    echo "  → /Applications/OmniDiskSweeper.app"
+                    echo "  → /Applications/Utilities/Terminal.app"
+                    echo "  (You may need to unlock the padlock first)"
+                    echo
+                    read -p "Press Enter when done..."
+                else
+                    print_error "Could not find OmniDiskSweeper.app in disk image"
+                    print_status "Contents of $MOUNT_POINT:"
+                    ls -la "$MOUNT_POINT"
+                fi
+
+                hdiutil detach "$MOUNT_POINT" -quiet
+            else
+                print_error "Failed to mount disk image"
+            fi
+        else
+            print_error "Failed to download OmniDiskSweeper"
+        fi
+
+        rm -rf "$TEMP_DIR"
+    fi
+
+    echo
+    echo "  To scan with full disk access, run:"
+    echo "  sudo /Applications/OmniDiskSweeper.app/Contents/MacOS/OmniDiskSweeper"
+    echo
+else
+    print_status "OmniDiskSweeper installation skipped"
 fi
 
 print_divider
@@ -440,8 +463,7 @@ echo "Note: Office installation cannot be automated due to licensing requirement
 print_divider
 print_status "🖨️ Printer Setup Reminder"
 echo "Don't forget to set up your printer!"
-echo "You can do this in System Preferences > Printers & Scanners"
-echo "Or use: System Settings > Printers & Scanners (macOS Ventura+)"
+echo "You can do this in System Settings > Printers & Scanners (macOS Ventura+)"
 echo
 read -p "Open Printer settings now? [y/N]: " OPEN_PRINTER_SETTINGS
 if [[ "$OPEN_PRINTER_SETTINGS" =~ ^[Yy]$ ]]; then
@@ -454,7 +476,8 @@ echo
 echo "Summary of installed software:"
 [[ -n "$COMPUTER_NAME" ]] && echo "  ✓ Computer name set to: $COMPUTER_NAME"
 [[ ${#SOFTWARE_TO_INSTALL[@]} -gt 0 ]] && echo "  ✓ Installed via Homebrew: $(IFS=', '; echo "${SOFTWARE_TO_INSTALL[*]}")"
-[[ -z "$INSTALL_ACRONIS" || "$INSTALL_ACRONIS" =~ ^[Yy]$ ]] && echo "  ✓ Installed Acronis Cyber Protect Connect Quick Assist"
+[[ -z "$INSTALL_ACRONIS" || "$INSTALL_ACRONIS" =~ ^[Yy]$ ]] && echo "  ✓ Acronis Cyber Protect Connect Quick Assist"
+[[ -z "$INSTALL_OMNIDISKSWEEPER" || "$INSTALL_OMNIDISKSWEEPER" =~ ^[Yy]$ ]] && echo "  ✓ OmniDiskSweeper"
 echo
 [[ -f "$CONFIG_FILE" ]] && echo "Configuration saved to: $CONFIG_FILE"
-echo "Run 'customize-system.sh' next to configure Finder, Dock, and system preferences!"
+echo "Run 'customize_system.sh' next to configure Finder, Dock, and system preferences!"
