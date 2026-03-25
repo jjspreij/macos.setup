@@ -108,6 +108,17 @@ if [[ "$DO_OMNIDISKSWEEPER" == "y" ]]; then
                     print_status "Copying OmniDiskSweeper to /Applications..."
                     cp -R "$APP_PATH" /Applications/
                     print_success "OmniDiskSweeper installed"
+                    print_status "OmniDiskSweeper needs Full Disk Access to fully scan."
+                    print_status "Terminal also needs Full Disk Access to launch it with sudo."
+                    print_status "Opening Privacy & Security settings..."
+                    open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+                    echo
+                    echo "  Add BOTH of these to Full Disk Access:"
+                    echo "  → /Applications/OmniDiskSweeper.app"
+                    echo "  → /Applications/Utilities/Terminal.app"
+                    echo "  (You may need to unlock the padlock first)"
+                    echo
+                    read -p "Press Enter when done..."
                 else
                     print_error "Could not find OmniDiskSweeper.app in disk image"
                     print_status "Contents of $MOUNT_POINT:"
@@ -128,7 +139,7 @@ if [[ "$DO_OMNIDISKSWEEPER" == "y" ]]; then
     # Print launch command for full disk scanning
     echo
     echo "  To scan with full disk access, run:"
-    echo "  sudo open /Applications/OmniDiskSweeper.app"
+    echo "  sudo /Applications/OmniDiskSweeper.app/Contents/MacOS/OmniDiskSweeper &"
     echo
     
 else
