@@ -154,7 +154,11 @@ if [[ "$SKIP_PROMPTS" != true ]]; then
     echo
 
     # Computer name
-    prompt_with_default "Enter the computer name (leave blank to skip)" "$COMPUTER_NAME" "COMPUTER_NAME"
+    CURRENT_NAME=$(scutil --get ComputerName 2>/dev/null || echo "")
+    if [[ -n "$CURRENT_NAME" && "$CURRENT_NAME" != "$COMPUTER_NAME" ]]; then
+        print_status "Current computer name: $CURRENT_NAME"
+    fi
+    prompt_with_default "Enter the computer name (leave blank to skip)" "${CURRENT_NAME:-$COMPUTER_NAME}" "COMPUTER_NAME"
 
     # Software selection
     echo
@@ -458,6 +462,17 @@ if [[ -n "$COMPUTER_NAME" ]]; then
 else
     print_status "Computer name change skipped"
 fi
+
+# Offer to rename startup volume to match
+    CURRENT_DISK_NAME=$(diskutil info / | awk -F': +' '/Volume Name/{print $2}')
+    if [[ -n "$CURRENT_DISK_NAME" && "$CURRENT_DISK_NAME" != "$COMPUTER_NAME" ]]; then
+        print_status "Startup disk is currently named: $CURRENT_DISK_NAME"
+        read -p "Rename startup disk to '$COMPUTER_NAME'? [Y/n]: " RENAME_DISK
+        if [[ ! "$RENAME_DISK" =~ ^[Nn]$ ]]; then
+            diskutil rename / "$COMPUTER_NAME"
+            print_success "Startup disk renamed to '$COMPUTER_NAME'"
+        fi
+    fi
 
 print_divider
 print_success "Software installation complete! 🎉"
