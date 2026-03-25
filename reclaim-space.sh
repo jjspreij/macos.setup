@@ -2,9 +2,9 @@
 
 # macOS Reclaim Space Script
 # Removes bloatware and cleans up caches to free disk space
-# Version: 2.0.0
+# Version: 2.1.0
 
-SCRIPT_VERSION="2.0.0"
+SCRIPT_VERSION="2.1.0"
 DIVIDER_ICON="🧹"
 
 # Source shared functions
@@ -29,6 +29,7 @@ echo "Select which tasks to run:"
 echo
 
 prompt_yn "Remove iMovie, GarageBand & support files?" "y" "DO_REMOVE_BLOAT"
+prompt_yn "Remove iWork suite (Keynote, Pages, Numbers)?" "y" "DO_REMOVE_IWORK"
 prompt_yn "Clean up system caches, backups & unused files?" "y" "DO_CLEANUP"
 
 print_divider
@@ -79,12 +80,47 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 2: System cleanup
+# STEP 2: Remove iWork suite (Keynote, Pages, Numbers)
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "$DO_REMOVE_IWORK" == "y" ]]; then
+    print_divider
+    print_status "STEP 2: Removing iWork suite"
+
+    IWORK_FREED=0
+
+    for APP in "Keynote" "Pages" "Numbers"; do
+        if [[ -d "/Applications/$APP.app" ]]; then
+            SIZE=$(du -sm "/Applications/$APP.app" 2>/dev/null | awk '{print $1}')
+            if [[ "${SIZE:-0}" -gt 0 ]]; then
+                print_status "Removing $APP.app (${SIZE} MB)..."
+                rm -rf "/Applications/$APP.app" 2>/dev/null || print_warning "$APP: some files protected by SIP — partially cleared"
+                IWORK_FREED=$((IWORK_FREED + SIZE))
+                print_success "$APP removed"
+            fi
+        else
+            print_status "$APP.app not found — already removed"
+        fi
+    done
+
+    if [[ "$IWORK_FREED" -gt 0 ]]; then
+        if [[ "$IWORK_FREED" -ge 1024 ]]; then
+            print_success "iWork removal freed approximately $((IWORK_FREED / 1024)) GB"
+        else
+            print_success "iWork removal freed approximately ${IWORK_FREED} MB"
+        fi
+    fi
+else
+    print_status "iWork removal skipped"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 3: System cleanup
 # ─────────────────────────────────────────────────────────────────────────────
 
 if [[ "$DO_CLEANUP" == "y" ]]; then
     print_divider
-    print_status "STEP 2: System cleanup"
+    print_status "STEP 3: System cleanup"
 
     CLEANUP_FREED=0
 
@@ -210,6 +246,8 @@ echo
 echo "Summary:"
 [[ "$DO_REMOVE_BLOAT" == "y" ]] && echo "  ✓ Removed iMovie, GarageBand & support files"
 [[ "$DO_REMOVE_BLOAT" == "n" ]] && echo "  – Bloatware removal (skipped)"
+[[ "$DO_REMOVE_IWORK" == "y" ]] && echo "  ✓ Removed iWork suite (Keynote, Pages, Numbers)"
+[[ "$DO_REMOVE_IWORK" == "n" ]] && echo "  – iWork removal (skipped)"
 [[ "$DO_CLEANUP" == "y" ]] && echo "  ✓ System cleanup"
 [[ "$DO_CLEANUP" == "n" ]] && echo "  – System cleanup (skipped)"
 echo
