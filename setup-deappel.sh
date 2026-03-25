@@ -144,7 +144,7 @@ if [[ "$DO_OMNIDISKSWEEPER" == "y" ]]; then
     # Print launch command for full disk scanning
     echo
     echo "  To scan with full disk access, run:"
-    echo "  sudo /Applications/OmniDiskSweeper.app/Contents/MacOS/OmniDiskSweeper &"
+    echo "  sudo /Applications/OmniDiskSweeper.app/Contents/MacOS/OmniDiskSweeper"
     echo
     
 else
