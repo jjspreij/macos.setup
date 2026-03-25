@@ -256,10 +256,18 @@ if [[ "$DO_CLEANUP" == "y" ]]; then
     done
 
     # --- System caches ---
-    remove_and_tally "/Library/Caches" "System caches (/Library/Caches)"
-    # Recreate the directory so the system doesn't complain
-    [[ ! -d "/Library/Caches" ]] && mkdir -p /Library/Caches
-
+    if [[ -d "/Library/Caches" ]]; then
+        SIZE=$(du -sm "/Library/Caches" 2>/dev/null | awk '{print $1}')
+        if [[ "${SIZE:-0}" -gt 0 ]]; then
+            print_status "Clearing system caches (${SIZE} MB)..."
+            rm -rf /Library/Caches/* 2>/dev/null || print_warning "Some system caches protected by SIP — partially cleared"
+            CLEANUP_FREED=$((CLEANUP_FREED + SIZE))
+            print_success "System caches cleared"
+        else
+            print_status "System caches empty — skipping"
+        fi
+    fi
+    
     # --- Per-user caches ---
     print_status "Checking per-user caches..."
     for USER_CACHE in /Users/*/Library/Caches; do
