@@ -444,27 +444,27 @@ else
     print_status "OmniDiskSweeper installation skipped"
 fi
 
-# Handle ZeroTier One separately — pkg installer with GUI
+# Handle ZeroTier separately — pkg installer with GUI
 if [[ -z "$INSTALL_ZEROTIER" || "$INSTALL_ZEROTIER" =~ ^[Yy]$ ]]; then
-    if [[ -d "/Applications/ZeroTier One.app" ]]; then
-        print_success "ZeroTier One already installed — skipping"
+    if [[ -d "/Applications/ZeroTier.app" ]]; then
+        print_success "ZeroTier already installed — skipping"
     else
-        print_status "Downloading and installing ZeroTier One..."
+        print_status "Downloading and installing ZeroTier..."
         TEMP_DIR=$(mktemp -d)
         PKG_FILE="$TEMP_DIR/ZeroTier One.pkg"
 
         if curl -s -L -o "$PKG_FILE" "https://download.zerotier.com/dist/ZeroTier%20One.pkg"; then
             print_status "Installing ZeroTier One.pkg..."
             sudo installer -pkg "$PKG_FILE" -target /
-            print_success "ZeroTier One installed"
+            print_success "ZeroTier installed"
         else
-            print_error "Failed to download ZeroTier One"
+            print_error "Failed to download ZeroTier"
         fi
 
         rm -rf "$TEMP_DIR"
     fi
 else
-    print_status "ZeroTier One installation skipped"
+    print_status "ZeroTier installation skipped"
 fi
 
 print_divider
