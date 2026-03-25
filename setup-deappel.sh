@@ -235,7 +235,7 @@ if [[ "$DO_CLEANUP" == "y" ]]; then
             SIZE=$(du -sm "$target" 2>/dev/null | awk '{print $1}')
             if [[ "${SIZE:-0}" -gt 0 ]]; then
                 print_status "Removing $label (${SIZE} MB)..."
-                rm -rf "$target"
+                rm -rf "$target" 2>/dev/null || print_warning "$label: some files protected by SIP — partially cleared"
                 CLEANUP_FREED=$((CLEANUP_FREED + SIZE))
                 print_success "$label removed"
             else
@@ -274,9 +274,6 @@ if [[ "$DO_CLEANUP" == "y" ]]; then
             fi
         fi
     done
-
-    # --- Old software update downloads ---
-    remove_and_tally "/Library/Updates" "Old software update downloads"
 
     # --- Unused printer drivers ---
     if [[ -d "/Library/Printers" ]]; then
