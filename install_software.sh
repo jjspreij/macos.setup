@@ -5,11 +5,11 @@
 # Version: 1.8.0
 
 SCRIPT_VERSION="1.8.0"
-CONFIG_FILE="$HOME/.macos-setup.cfg"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/macos-setup.cfg"
 DIVIDER_ICON="🔷"
 
 # Source shared functions
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
 echo "📦 macOS Software Installation Script v$SCRIPT_VERSION"
