@@ -109,6 +109,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Auto-load config if present (no need for -c flag)
+if [[ -f "$CONFIG_FILE" ]] && [[ "$USE_CONFIG" == false ]]; then
+    USE_CONFIG=true
+fi
+
 # Load existing config if requested or if skipping prompts
 if [[ "$USE_CONFIG" == true ]] || [[ "$SKIP_PROMPTS" == true ]]; then
     if load_config; then
