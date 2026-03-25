@@ -94,8 +94,11 @@ if [[ "$DO_OMNIDISKSWEEPER" == "y" ]]; then
 
         print_status "Downloading OmniDiskSweeper..."
         if curl -L -o "$DMG_FILE" "$DOWNLOAD_URL"; then
-            print_status "Mounting disk image..."
-            MOUNT_POINT=$(hdiutil attach "$DMG_FILE" -nobrowse -quiet | grep "/Volumes" | awk -F'\t' '{print $NF}')
+            
+            print_status "Downloaded to: $DMG_FILE"
+            print_status "Mounting disk image (accepting license agreement)..."
+            MOUNT_OUTPUT=$(printf 'Y\n' | PAGER=cat hdiutil attach "$DMG_FILE" -nobrowse 2>&1)
+            MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep "/Volumes" | awk -F'\t' '{print $NF}')
 
             if [[ -n "$MOUNT_POINT" ]]; then
                 APP_PATH=$(find "$MOUNT_POINT" -maxdepth 1 -name "OmniDiskSweeper.app" -print -quit)
