@@ -84,12 +84,14 @@ RESTART_FINDER=true
 print_success "Hard drives, servers, and removable media shown on desktop"
 
 print_status "Setting desktop icons to sort by kind..."
-/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:arrangeBy kind" ~/Library/Preferences/com.apple.finder.plist 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:arrangeBy kind" ~/Library/Preferences/com.apple.finder.plist 2>/dev/null || \
+/usr/libexec/PlistBuddy -c "Add :DesktopViewSettings:IconViewSettings:arrangeBy string kind" ~/Library/Preferences/com.apple.finder.plist
 RESTART_FINDER=true
 print_success "Desktop icons sorted by kind"
 
 print_status "Setting desktop icon labels to right side..."
-/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:labelOnSide true" ~/Library/Preferences/com.apple.finder.plist 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:labelOnSide true" ~/Library/Preferences/com.apple.finder.plist 2>/dev/null || \
+/usr/libexec/PlistBuddy -c "Add :DesktopViewSettings:IconViewSettings:labelOnSide bool true" ~/Library/Preferences/com.apple.finder.plist
 RESTART_FINDER=true
 print_success "Desktop icon labels set to right side"
 
@@ -161,6 +163,8 @@ if [[ "$RESTART_DOCK" == true ]]; then
 fi
 
 if [[ "$RESTART_FINDER" == true ]]; then
+    print_status "Flushing preference cache..."
+    killall cfprefsd 2>/dev/null || true
     print_status "Restarting Finder..."
     killall Finder
     print_success "Finder restarted"
