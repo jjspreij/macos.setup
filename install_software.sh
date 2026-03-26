@@ -2,9 +2,9 @@
 
 # macOS Software Installation Script
 # Installs Homebrew and selected applications
-# Version: 1.8.0
+# Version: 1.9.0
 
-SCRIPT_VERSION="1.8.0"
+SCRIPT_VERSION="1.9.0"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/macos-setup.cfg"
 DIVIDER_ICON="🔷"
@@ -481,16 +481,18 @@ print_status "STEP 5: Setting Computer Name"
 
 # Set computer name
 if [[ -n "$COMPUTER_NAME" ]]; then
-    print_status "Setting computer name to '$COMPUTER_NAME'..."
-    sudo scutil --set ComputerName "$COMPUTER_NAME"
-    sudo scutil --set HostName "$COMPUTER_NAME"
-    sudo scutil --set LocalHostName "${COMPUTER_NAME// /-}"  # Replace spaces with hyphens
-    print_success "Computer name set"
-else
-    print_status "Computer name change skipped"
-fi
+    CURRENT_NAME=$(scutil --get ComputerName 2>/dev/null)
+    if [[ "$CURRENT_NAME" == "$COMPUTER_NAME" ]]; then
+        print_success "Computer name already set to '$COMPUTER_NAME' — skipping"
+    else
+        print_status "Setting computer name to '$COMPUTER_NAME'..."
+        sudo scutil --set ComputerName "$COMPUTER_NAME"
+        sudo scutil --set HostName "$COMPUTER_NAME"
+        sudo scutil --set LocalHostName "${COMPUTER_NAME// /-}"
+        print_success "Computer name set"
+    fi
 
-# Offer to rename startup volume to match
+# Offer to rename startup volume to match (always check)
     CURRENT_DISK_NAME=$(diskutil info / | awk -F': +' '/Volume Name/{print $2}')
     if [[ -n "$CURRENT_DISK_NAME" && "$CURRENT_DISK_NAME" != "$COMPUTER_NAME" ]]; then
         print_status "Startup disk is currently named: $CURRENT_DISK_NAME"
@@ -499,7 +501,12 @@ fi
             diskutil rename / "$COMPUTER_NAME"
             print_success "Startup disk renamed to '$COMPUTER_NAME'"
         fi
+    else
+        print_success "Startup disk already named '$COMPUTER_NAME'"
     fi
+else
+    print_status "Computer name change skipped"
+fi
 
 print_divider
 print_success "Software installation complete! 🎉"
