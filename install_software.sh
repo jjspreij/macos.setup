@@ -318,6 +318,14 @@ else
     print_warning "No Homebrew applications selected for installation"
 fi
 
+# Install command-line tools via Homebrew (formulae, not casks)
+print_status "Installing command-line tools..."
+if brew install rsync; then
+    print_success "rsync (modern version) installed"
+else
+    print_error "Failed to install rsync"
+fi
+
 print_divider
 print_status "STEP 4: Installing Special Applications"
 
