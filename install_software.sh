@@ -543,4 +543,5 @@ echo "Summary of installed software:"
 [[ -z "$INSTALL_ZEROTIER" || "$INSTALL_ZEROTIER" =~ ^[Yy]$ ]] && echo "  ✓ ZeroTier One"
 echo
 [[ -f "$CONFIG_FILE" ]] && echo "Configuration saved to: $CONFIG_FILE"
+echo "Run 'hash -r' or open a new terminal to pick up the updated rsync."
 echo "Run 'customize_system.sh' next to configure Finder, Dock, and system preferences!"
