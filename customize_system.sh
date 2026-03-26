@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # macOS System Customization Script
-# Configures Finder, Dock, and system preferences
-# Version: 1.8.0
+# Configures Finder, Dock, Desktop, and system preferences
+# Version: 2.0.0
 
-SCRIPT_VERSION="1.8.0"
+SCRIPT_VERSION="2.0.0"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/macos-setup.cfg"
@@ -17,227 +17,81 @@ echo "🎨 macOS System Customization Script v$SCRIPT_VERSION"
 echo "===================================="
 echo
 
-# Function to save config
-save_config() {
-    # Create config if it doesn't exist, or update system section if it does
-    if [[ -f "$CONFIG_FILE" ]]; then
-        # Update existing config - remove old system settings and add new ones
-        grep -v "^SET_\|^SHOW_\|^DISABLE_\|^ALWAYS_\|^DOCK_" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" 2>/dev/null || true
-        cat >> "${CONFIG_FILE}.tmp" << EOF
-# System Customization Settings - Updated $(date)
-SET_DOCK_AUTOHIDE="$SET_DOCK_AUTOHIDE"
-SET_TRACKPAD_CLICK="$SET_TRACKPAD_CLICK"
-DISABLE_STAGE_MANAGER="$DISABLE_STAGE_MANAGER"
-SHOW_FILE_EXTENSIONS="$SHOW_FILE_EXTENSIONS"
-SHOW_PATH_BAR="$SHOW_PATH_BAR"
-SHOW_STATUS_BAR="$SHOW_STATUS_BAR"
-ALWAYS_SHOW_SCROLLBARS="$ALWAYS_SHOW_SCROLLBARS"
-DOCK_REMOVE_ITEMS="$DOCK_REMOVE_ITEMS"
-DOCK_ADD_ITEMS="$DOCK_ADD_ITEMS"
-EOF
-        mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
-    else
-        cat > "$CONFIG_FILE" << EOF
-# macOS Setup Configuration
-# Generated on $(date)
-SET_DOCK_AUTOHIDE="$SET_DOCK_AUTOHIDE"
-SET_TRACKPAD_CLICK="$SET_TRACKPAD_CLICK"
-DISABLE_STAGE_MANAGER="$DISABLE_STAGE_MANAGER"
-SHOW_FILE_EXTENSIONS="$SHOW_FILE_EXTENSIONS"
-SHOW_PATH_BAR="$SHOW_PATH_BAR"
-SHOW_STATUS_BAR="$SHOW_STATUS_BAR"
-ALWAYS_SHOW_SCROLLBARS="$ALWAYS_SHOW_SCROLLBARS"
-DOCK_REMOVE_ITEMS="$DOCK_REMOVE_ITEMS"
-DOCK_ADD_ITEMS="$DOCK_ADD_ITEMS"
-EOF
-    fi
-    print_success "System customization configuration saved to $CONFIG_FILE"
-}
-
-# Function to load config
-load_config() {
-    if [[ -f "$CONFIG_FILE" ]]; then
-        print_status "Loading configuration from $CONFIG_FILE"
-        source "$CONFIG_FILE"
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Check for command line arguments
-USE_CONFIG=false
-SKIP_PROMPTS=false
-SAVE_CONFIG_ONLY=false
-
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        -c|--use-config)
-            USE_CONFIG=true
-            shift
-            ;;
-        -s|--skip-prompts)
-            SKIP_PROMPTS=true
-            shift
-            ;;
-        -o|--save-config)
-            SAVE_CONFIG_ONLY=true
-            shift
-            ;;
-        -f|--config-file)
-            CONFIG_FILE="$2"
-            shift 2
-            ;;
-        -h|--help)
-            echo "Usage: $0 [OPTIONS]"
-            echo "macOS System Customization Script v$SCRIPT_VERSION"
-            echo
-            echo "Options:"
-            echo "  -c, --use-config       Load settings from config file (still prompts for missing values)"
-            echo "  -s, --skip-prompts     Use config file without any prompts (fails if no config)"
-            echo "  -o, --save-config      Only save configuration, don't run customization"
-            echo "  -f, --config-file FILE Use specific config file (default: ~/.macos-setup.cfg)"
-            echo "  -h, --help             Show this help message"
-            echo
-            echo "Config file location: $CONFIG_FILE"
-            exit 0
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            echo "Use --help for usage information"
-            exit 1
-            ;;
-    esac
-done
-
-# Auto-load config if present (no need for -c flag)
-if [[ -f "$CONFIG_FILE" ]] && [[ "$USE_CONFIG" == false ]]; then
-    USE_CONFIG=true
+# Load config for Dock items (only settings that need user input)
+if [[ -f "$CONFIG_FILE" ]]; then
+    print_status "Loading configuration from $CONFIG_FILE"
+    source "$CONFIG_FILE"
 fi
 
-# Load existing config if requested or if skipping prompts
-if [[ "$USE_CONFIG" == true ]] || [[ "$SKIP_PROMPTS" == true ]]; then
-    if load_config; then
-        echo "Loaded system customization configuration:"
-        echo "  Dock auto-hide: ${SET_DOCK_AUTOHIDE:-"y"}, Trackpad click: ${SET_TRACKPAD_CLICK:-"y"}"
-        echo "  Disable Stage Manager wallpaper click: ${DISABLE_STAGE_MANAGER:-"y"}"
-        echo "  Show extensions: ${SHOW_FILE_EXTENSIONS:-"y"}, Show path bar: ${SHOW_PATH_BAR:-"y"}"
-        echo "  Show status bar: ${SHOW_STATUS_BAR:-"y"}, Always show scrollbars: ${ALWAYS_SHOW_SCROLLBARS:-"y"}"
-        echo "  Dock - Remove: ${DOCK_REMOVE_ITEMS:-"(none)"}"
-        echo "  Dock - Add: ${DOCK_ADD_ITEMS:-"(none)"}"
-        echo
-    else
-        if [[ "$SKIP_PROMPTS" == true ]]; then
-            print_error "No config file found at $CONFIG_FILE and --skip-prompts specified"
-            exit 1
-        else
-            print_warning "No config file found, will create one"
-        fi
-    fi
-fi
+# Dock customization prompts
+echo "Dock customization:"
+echo "Enter app names separated by commas, or leave blank to skip"
+prompt_with_default "Remove from Dock" "${DOCK_REMOVE_ITEMS:-""}" "DOCK_REMOVE_ITEMS"
+prompt_with_default "Add to Dock" "${DOCK_ADD_ITEMS:-""}" "DOCK_ADD_ITEMS"
 
-# Collect user preferences (skip if using config without prompts)
-if [[ "$SKIP_PROMPTS" != true ]]; then
-    if [[ "$USE_CONFIG" == true ]]; then
-        echo "Review and update system customization settings (press Enter to keep current value):"
-    else
-        echo "Let's configure your system customization preferences:"
-    fi
-    echo
+# ─────────────────────────────────────────────────────────────────────────────
 
-    # System preferences
-    echo "System preferences (Y/n) - defaults to Yes:"
-    prompt_with_default "Set Dock to auto-hide? [Y/n]" "${SET_DOCK_AUTOHIDE:-"y"}" "SET_DOCK_AUTOHIDE"
-    prompt_with_default "Enable trackpad tap-to-click? [Y/n]" "${SET_TRACKPAD_CLICK:-"y"}" "SET_TRACKPAD_CLICK"
-    prompt_with_default "Disable Stage Manager 'click wallpaper to reveal desktop'? [Y/n]" "${DISABLE_STAGE_MANAGER:-"y"}" "DISABLE_STAGE_MANAGER"
-    
-    echo
-    echo "Finder preferences (Y/n) - defaults to Yes:"
-    prompt_with_default "Show file extensions in Finder? [Y/n]" "${SHOW_FILE_EXTENSIONS:-"y"}" "SHOW_FILE_EXTENSIONS"
-    prompt_with_default "Show path bar in Finder? [Y/n]" "${SHOW_PATH_BAR:-"y"}" "SHOW_PATH_BAR"
-    prompt_with_default "Show status bar in Finder? [Y/n]" "${SHOW_STATUS_BAR:-"y"}" "SHOW_STATUS_BAR"
-    prompt_with_default "Always show scrollbars? [Y/n]" "${ALWAYS_SHOW_SCROLLBARS:-"y"}" "ALWAYS_SHOW_SCROLLBARS"
-
-    # Dock customization
-    echo
-    echo "Dock customization:"
-    echo "Enter app names separated by commas (e.g., 'Launchpad,Reminders')"
-    prompt_with_default "Remove from Dock" "$DOCK_REMOVE_ITEMS" "DOCK_REMOVE_ITEMS"
-    prompt_with_default "Add to Dock" "$DOCK_ADD_ITEMS" "DOCK_ADD_ITEMS"
-
-    # Save configuration
-    echo
-    read -p "Save this configuration for future use? [Y/n]: " SAVE_CONFIG_CHOICE
-    if [[ ! "$SAVE_CONFIG_CHOICE" =~ ^[Nn]$ ]]; then
-        save_config
-    fi
-fi
-
-# Exit if only saving config
-if [[ "$SAVE_CONFIG_ONLY" == true ]]; then
-    save_config
-    echo "Configuration saved. Run without --save-config to execute customization."
-    exit 0
-fi
+RESTART_DOCK=false
+RESTART_FINDER=false
 
 print_divider
 print_status "STEP 1: Configuring System Preferences"
 
-# Apply system preferences
-RESTART_DOCK=false
-RESTART_FINDER=false
+print_status "Setting Dock to auto-hide..."
+defaults write com.apple.dock autohide -bool true
+RESTART_DOCK=true
+print_success "Dock auto-hide enabled"
 
-if [[ -z "$SET_DOCK_AUTOHIDE" || "$SET_DOCK_AUTOHIDE" =~ ^[Yy]$ ]]; then
-    print_status "Setting Dock to auto-hide..."
-    defaults write com.apple.dock autohide -bool true
-    RESTART_DOCK=true
-    print_success "Dock auto-hide enabled"
-fi
+print_status "Enabling trackpad tap-to-click..."
+defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
+defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
+defaults -currentHost write NSGlobalDomain com.apple.mouse.tapBehavior -int 1
+defaults write NSGlobalDomain com.apple.mouse.tapBehavior -int 1
+print_success "Trackpad tap-to-click enabled"
 
-if [[ -z "$SET_TRACKPAD_CLICK" || "$SET_TRACKPAD_CLICK" =~ ^[Yy]$ ]]; then
-    print_status "Enabling trackpad tap-to-click..."
-    defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
-    defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
-    defaults -currentHost write NSGlobalDomain com.apple.mouse.tapBehavior -int 1
-    defaults write NSGlobalDomain com.apple.mouse.tapBehavior -int 1
-    print_success "Trackpad tap-to-click enabled"
-fi
+print_status "Disabling Stage Manager 'click wallpaper to reveal desktop'..."
+defaults write com.apple.WindowManager EnableStandardClickToShowDesktop -bool false
+print_success "Stage Manager wallpaper click disabled"
 
-if [[ -z "$DISABLE_STAGE_MANAGER" || "$DISABLE_STAGE_MANAGER" =~ ^[Yy]$ ]]; then
-    print_status "Disabling Stage Manager 'click wallpaper to reveal desktop'..."
-    defaults write com.apple.WindowManager EnableStandardClickToShowDesktop -bool false
-    print_success "Stage Manager wallpaper click disabled"
-fi
-
-if [[ -z "$ALWAYS_SHOW_SCROLLBARS" || "$ALWAYS_SHOW_SCROLLBARS" =~ ^[Yy]$ ]]; then
-    print_status "Setting scrollbars to always show..."
-    defaults write NSGlobalDomain AppleShowScrollBars -string "Always"
-    print_success "Scrollbars will always be visible"
-fi
+print_status "Setting scrollbars to always show..."
+defaults write NSGlobalDomain AppleShowScrollBars -string "Always"
+print_success "Scrollbars always visible"
 
 print_divider
-print_status "STEP 2: Configuring Finder Preferences"
+print_status "STEP 2: Configuring Finder & Desktop Preferences"
 
-if [[ -z "$SHOW_FILE_EXTENSIONS" || "$SHOW_FILE_EXTENSIONS" =~ ^[Yy]$ ]]; then
-    print_status "Showing file extensions in Finder..."
-    defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-    RESTART_FINDER=true
-    print_success "File extensions will be shown in Finder"
-fi
+print_status "Showing file extensions in Finder..."
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+RESTART_FINDER=true
+print_success "File extensions shown"
 
-if [[ -z "$SHOW_PATH_BAR" || "$SHOW_PATH_BAR" =~ ^[Yy]$ ]]; then
-    print_status "Showing path bar in Finder..."
-    defaults write com.apple.finder ShowPathbar -bool true
-    RESTART_FINDER=true
-    print_success "Path bar will be shown in Finder"
-fi
+print_status "Showing path bar in Finder..."
+defaults write com.apple.finder ShowPathbar -bool true
+RESTART_FINDER=true
+print_success "Path bar shown"
 
-if [[ -z "$SHOW_STATUS_BAR" || "$SHOW_STATUS_BAR" =~ ^[Yy]$ ]]; then
-    print_status "Showing status bar in Finder..."
-    defaults write com.apple.finder ShowStatusBar -bool true
-    RESTART_FINDER=true
-    print_success "Status bar will be shown in Finder"
-fi
+print_status "Showing status bar in Finder..."
+defaults write com.apple.finder ShowStatusBar -bool true
+RESTART_FINDER=true
+print_success "Status bar shown"
+
+print_status "Showing hard drives, servers, and removable media on desktop..."
+defaults write com.apple.finder ShowHardDrivesOnDesktop -bool true
+defaults write com.apple.finder ShowExternalHardDrivesOnDesktop -bool true
+defaults write com.apple.finder ShowMountedServersOnDesktop -bool true
+defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool true
+RESTART_FINDER=true
+print_success "Hard drives, servers, and removable media shown on desktop"
+
+print_status "Setting desktop icons to sort by kind..."
+/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:arrangeBy kind" ~/Library/Preferences/com.apple.finder.plist 2>/dev/null || true
+RESTART_FINDER=true
+print_success "Desktop icons sorted by kind"
+
+print_status "Setting desktop icon labels to right side..."
+/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:labelOnSide true" ~/Library/Preferences/com.apple.finder.plist 2>/dev/null || true
+RESTART_FINDER=true
+print_success "Desktop icon labels set to right side"
 
 print_divider
 print_status "STEP 3: Customizing Dock"
@@ -258,12 +112,11 @@ if [[ -n "$DOCK_REMOVE_ITEMS" || -n "$DOCK_ADD_ITEMS" ]]; then
     fi
 fi
 
-# Dock customization
 if [[ -n "$DOCK_REMOVE_ITEMS" ]]; then
     print_status "Removing items from Dock..."
     IFS=',' read -ra REMOVE_APPS <<< "$DOCK_REMOVE_ITEMS"
     for app in "${REMOVE_APPS[@]}"; do
-        app=$(echo "$app" | xargs)  # Trim whitespace
+        app=$(echo "$app" | xargs)
         if [[ -n "$app" ]]; then
             print_status "Removing $app from Dock..."
             dockutil --remove "$app" --no-restart 2>/dev/null || print_warning "Could not remove $app (may not be in Dock)"
@@ -276,10 +129,9 @@ if [[ -n "$DOCK_ADD_ITEMS" ]]; then
     print_status "Adding items to Dock..."
     IFS=',' read -ra ADD_APPS <<< "$DOCK_ADD_ITEMS"
     for app in "${ADD_APPS[@]}"; do
-        app=$(echo "$app" | xargs)  # Trim whitespace
+        app=$(echo "$app" | xargs)
         if [[ -n "$app" ]]; then
             print_status "Adding $app to Dock..."
-            # Try common locations for the app
             APP_PATH=""
             if [[ -d "/Applications/$app.app" ]]; then
                 APP_PATH="/Applications/$app.app"
@@ -288,7 +140,7 @@ if [[ -n "$DOCK_ADD_ITEMS" ]]; then
             elif [[ -d "/Applications/Utilities/$app.app" ]]; then
                 APP_PATH="/Applications/Utilities/$app.app"
             fi
-            
+
             if [[ -n "$APP_PATH" ]]; then
                 dockutil --add "$APP_PATH" --no-restart 2>/dev/null && print_success "$app added to Dock" || print_warning "Failed to add $app to Dock"
             else
@@ -302,7 +154,6 @@ fi
 print_divider
 print_status "STEP 4: Applying Changes"
 
-# Restart services to apply changes
 if [[ "$RESTART_DOCK" == true ]]; then
     print_status "Restarting Dock..."
     killall Dock
@@ -319,15 +170,17 @@ print_divider
 print_success "System customization complete! 🎉"
 echo
 echo "Summary of customizations applied:"
-[[ -z "$SET_DOCK_AUTOHIDE" || "$SET_DOCK_AUTOHIDE" =~ ^[Yy]$ ]] && echo "  ✓ Dock set to auto-hide"
-[[ -z "$SET_TRACKPAD_CLICK" || "$SET_TRACKPAD_CLICK" =~ ^[Yy]$ ]] && echo "  ✓ Trackpad tap-to-click enabled"
-[[ -z "$DISABLE_STAGE_MANAGER" || "$DISABLE_STAGE_MANAGER" =~ ^[Yy]$ ]] && echo "  ✓ Stage Manager wallpaper click disabled"
-[[ -z "$SHOW_FILE_EXTENSIONS" || "$SHOW_FILE_EXTENSIONS" =~ ^[Yy]$ ]] && echo "  ✓ File extensions shown in Finder"
-[[ -z "$SHOW_PATH_BAR" || "$SHOW_PATH_BAR" =~ ^[Yy]$ ]] && echo "  ✓ Path bar shown in Finder"
-[[ -z "$SHOW_STATUS_BAR" || "$SHOW_STATUS_BAR" =~ ^[Yy]$ ]] && echo "  ✓ Status bar shown in Finder"
-[[ -z "$ALWAYS_SHOW_SCROLLBARS" || "$ALWAYS_SHOW_SCROLLBARS" =~ ^[Yy]$ ]] && echo "  ✓ Scrollbars always visible"
+echo "  ✓ Dock set to auto-hide"
+echo "  ✓ Trackpad tap-to-click enabled"
+echo "  ✓ Stage Manager wallpaper click disabled"
+echo "  ✓ Scrollbars always visible"
+echo "  ✓ File extensions shown in Finder"
+echo "  ✓ Path bar shown in Finder"
+echo "  ✓ Status bar shown in Finder"
+echo "  ✓ Hard drives, servers, removable media shown on desktop"
+echo "  ✓ Desktop icons sorted by kind"
+echo "  ✓ Desktop icon labels on right side"
 [[ -n "$DOCK_REMOVE_ITEMS" ]] && echo "  ✓ Removed from Dock: $DOCK_REMOVE_ITEMS"
 [[ -n "$DOCK_ADD_ITEMS" ]] && echo "  ✓ Added to Dock: $DOCK_ADD_ITEMS"
 echo
-[[ -f "$CONFIG_FILE" ]] && echo "Configuration saved to: $CONFIG_FILE"
 echo "You may need to log out and back in for some changes to take full effect."
