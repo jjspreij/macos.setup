@@ -203,6 +203,33 @@ if [[ "$DO_CLEANUP" == "y" ]]; then
         fi
     done
 
+    # --- Aerial wallpaper videos ---
+    print_status "Checking aerial wallpaper videos..."
+    for WALLPAPER_DIR in /Users/*/Library/Application\ Support/com.apple.wallpaper/aerials/videos; do
+        if [[ -d "$WALLPAPER_DIR" ]]; then
+            USER_DIR=$(echo "$WALLPAPER_DIR" | cut -d'/' -f3)
+            VIDEO_COUNT=$(find "$WALLPAPER_DIR" -name "*.mov" 2>/dev/null | wc -l | tr -d ' ')
+            if [[ "$VIDEO_COUNT" -gt 1 ]]; then
+                SIZE=$(du -sm "$WALLPAPER_DIR" 2>/dev/null | awk '{print $1}')
+                print_status "Found $VIDEO_COUNT aerial videos for $USER_DIR (${SIZE} MB)"
+                echo "  Keeping only the most recently used video."
+                echo "  macOS will re-download others if selected as wallpaper."
+                NEWEST=$(ls -t "$WALLPAPER_DIR"/*.mov 2>/dev/null | head -1)
+                for VID in "$WALLPAPER_DIR"/*.mov; do
+                    if [[ "$VID" != "$NEWEST" ]]; then
+                        VID_SIZE=$(du -sm "$VID" 2>/dev/null | awk '{print $1}')
+                        print_status "Removing $(basename "$VID") (${VID_SIZE} MB)..."
+                        rm -f "$VID" 2>/dev/null
+                        CLEANUP_FREED=$((CLEANUP_FREED + ${VID_SIZE:-0}))
+                    fi
+                done
+                print_success "Kept $(basename "$NEWEST"), removed $((VIDEO_COUNT - 1)) other(s)"
+            elif [[ "$VIDEO_COUNT" -eq 1 ]]; then
+                print_status "Only 1 aerial video for $USER_DIR — nothing to clean"
+            fi
+        fi
+    done
+
     # --- Time Machine local snapshots ---
     SNAPSHOT_COUNT=$(tmutil listlocalsnapshots / 2>/dev/null | grep -c "com.apple" || true)
     if [[ "$SNAPSHOT_COUNT" -gt 0 ]]; then
