@@ -144,7 +144,7 @@ PROFILE_EOF
     echo "  ✓ $EMAIL → $(basename "$PROFILE_FILE")"
     COUNT=$((COUNT + 1))
 
-done < "$INPUT_FILE"
+done < <(cat "$INPUT_FILE"; echo)
 
 echo
 echo "Generated $COUNT profile(s) in: $OUTPUT_DIR"
