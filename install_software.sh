@@ -321,6 +321,7 @@ fi
 # Install command-line tools via Homebrew (formulae, not casks)
 print_status "Installing command-line tools..."
 if brew install rsync; then
+    hash -r
     print_success "rsync (modern version) installed"
 else
     print_error "Failed to install rsync"
