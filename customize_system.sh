@@ -90,8 +90,8 @@ RESTART_FINDER=true
 print_success "Desktop icons sorted by kind"
 
 print_status "Setting desktop icon labels to right side..."
-/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:labelOnSide true" ~/Library/Preferences/com.apple.finder.plist 2>/dev/null || \
-/usr/libexec/PlistBuddy -c "Add :DesktopViewSettings:IconViewSettings:labelOnSide bool true" ~/Library/Preferences/com.apple.finder.plist
+/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:labelOnBottom false" ~/Library/Preferences/com.apple.finder.plist 2>/dev/null || \
+/usr/libexec/PlistBuddy -c "Add :DesktopViewSettings:IconViewSettings:labelOnBottom bool false" ~/Library/Preferences/com.apple.finder.plist
 RESTART_FINDER=true
 print_success "Desktop icon labels set to right side"
 
