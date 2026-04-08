@@ -1,54 +1,78 @@
 # macOS Setup Scripts
 
-A collection of shell scripts to automate new Mac deployments.
+Shell scripts to automate new Mac deployments. Clone to `/Users/Shared/macos.setup` on target Macs and run as needed.
+
+```bash
+git clone git@github.com:jjspreij/macos.setup.git /Users/Shared/macos.setup
+```
 
 ## Scripts
 
-| Script | Purpose | Run as |
-|--------|---------|--------|
-| `install_software.sh` | Homebrew, apps (Chrome, VLC, Acronis, OmniDiskSweeper, etc.) | user |
-| `customize_system.sh` | Finder, Dock, trackpad, Stage Manager preferences | user |
-| `reclaim-space.sh` | Remove bloatware (iMovie, GarageBand) and clean up caches | `sudo` |
-| `setup_dcxadmin_account.sh` | Create hidden admin account for remote support | `sudo` |
+### Software & System
 
-## Shared library
+| Script | What it does | Run as |
+|--------|-------------|--------|
+| `install_software.sh` | Installs Homebrew, cask apps (Chrome, Firefox, Sublime Text, 1Password, etc.), plus Acronis, OmniDiskSweeper, and ZeroTier via direct download. Sets computer name and offers to rename the startup disk. | user |
+| `customize_system.sh` | Configures Finder (extensions, path bar, status bar), Desktop (show drives/servers, sort by kind, labels on right), Dock (auto-hide, remove/add items), trackpad tap-to-click, scrollbars, Stage Manager. | user |
+| `reclaim-space.sh` | Removes iMovie, GarageBand, iWork suite, and cleans up caches, iOS backups, printer drivers, Mail downloads, aerial wallpaper videos, and Time Machine snapshots. | `sudo` |
 
-`common.sh` provides color output functions (`print_status`, `print_success`, `print_warning`, `print_error`, `print_divider`) and input prompts (`prompt_with_default`, `prompt_yn`). All scripts source it automatically.
+### User Accounts
 
-## Usage
+| Script | What it does | Run as |
+|--------|-------------|--------|
+| `setup_user.sh` | Creates a new macOS user account. Prompts for name, password, admin/standard. Applies a template archive (`-t`) or copies settings from a local user. Skips Setup Assistant wizards. | `sudo` |
+| `export_user_template.sh` | Exports Dock, Finder, WindowManager, and NSGlobalDomain prefs from an existing user into `user_template.tar.gz` for use with `setup_user.sh` on any Mac. | user |
+| `setup_dcxadmin_account.sh` | Creates the hidden `dcxadmin` admin account (UID 499) for remote support. Requires `DCXADMIN_PASS` environment variable. | `sudo` |
+
+### Email
+
+| Script | What it does | Run as |
+|--------|-------------|--------|
+| `setup_email.sh` | Generates a `.mobileconfig` profile for a single IMAP/SMTP email account. Defaults to `@deappel.nl` / `mail.webtic.net`. Opens for install or saves to Desktop. | user |
+| `setup_email_batch.sh` | Batch generates `.mobileconfig` profiles from a text file (one email + password per line). Outputs to `~/Desktop/mail_profiles/`. | user |
+
+### Support Files
+
+| File | Purpose |
+|------|---------|
+| `common.sh` | Shared functions (color output, prompts) sourced by all scripts |
+| `macos-setup.cfg` | Default configuration for `install_software.sh` and `customize_system.sh` |
+| `secrets.env` | Credentials for `setup_dcxadmin_account.sh` (git-ignored) |
+| `user_template.tar.gz` | User preferences template created by `export_user_template.sh` |
+
+## Typical deployment order
 
 ```bash
-# Clone the repo
-git clone git@github.com:jjspreij/macos.setup.git /Users/Shared/macos.setup
 cd /Users/Shared/macos.setup
 
-# 1. Install software (interactive prompts)
-./install_software.sh
+# 1. Install software (run as the normal admin user, not root)
+bash install_software.sh
 
 # 2. Customize system preferences
-./customize_system.sh
+bash customize_system.sh
 
-# 3. Reclaim disk space (requires root)
-sudo ./reclaim-space.sh
+# 3. Reclaim disk space
+sudo bash reclaim-space.sh
 
-# 4. Set up hidden admin account (requires root + secrets.env)
+# 4. Set up hidden admin account
 source secrets.env
-sudo -E ./setup_dcxadmin_account.sh
+sudo -E bash setup_dcxadmin_account.sh
+
+# 5. Create user accounts (with template from a configured Mac)
+sudo bash setup_user.sh -t user_template.tar.gz
+
+# 6. Set up email
+bash setup_email.sh
 ```
 
 ## Configuration
 
-Scripts that support it can load settings from `~/.macos-setup.cfg`:
+`install_software.sh` auto-loads `macos-setup.cfg` from the script directory when present. It prompts for each setting with the config value as default — press Enter to accept.
 
-```bash
-./install_software.sh -c          # Load config, prompt for changes
-./install_software.sh -s          # Load config, skip all prompts
-./install_software.sh -o          # Save config only, don't run
-./install_software.sh -f file.cfg # Use a specific config file
-```
+Available flags: `-s` (skip all prompts, use config as-is), `-o` (save config only), `-f file.cfg` (use a different config file).
 
-A template config is provided in `macos-setup.cfg`.
+## Secrets & credentials
 
-## Secrets
+Files containing credentials are git-ignored: `secrets.env`, `DCXADMIN_PASS_1password_note.md`, `install_fmp.sh`. See the 1Password note "DCXADMIN_PASS" for setup instructions.
 
-`setup_dcxadmin_account.sh` reads the password from the `DCXADMIN_PASS` environment variable. Create a `secrets.env` file (git-ignored) with the password, or look up the 1Password note "DCXADMIN_PASS" for instructions.
+Email profiles generated by `setup_email.sh` / `setup_email_batch.sh` contain passwords in plain text — delete after installing on target Macs.
