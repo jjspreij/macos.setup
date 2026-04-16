@@ -37,10 +37,8 @@ if [[ ! -d "$SOURCE_HOME/Library/Preferences" ]]; then
     exit 1
 fi
 
-# Default output location
-DEFAULT_OUTPUT="$SCRIPT_DIR/user_template.tar.gz"
-read -p "Save template to [$DEFAULT_OUTPUT]: " OUTPUT_FILE
-OUTPUT_FILE="${OUTPUT_FILE:-$DEFAULT_OUTPUT}"
+# Output location
+OUTPUT_FILE="$HOME/Desktop/user_template.tar.gz"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Build file list
